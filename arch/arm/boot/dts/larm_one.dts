@@ -1,0 +1,12 @@
+/dts-v1/;
+
+/ {
+    #address-cells = <1>;
+    #size-cells = <1>;
+    compatible = "arm,larm_one";
+
+    chosen {
+        bootargs = "earlycon=/dev/ttyLARM0 rw init=/sbin/init";
+    };
+
+};

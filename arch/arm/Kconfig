@@ -491,6 +491,13 @@ config ARCH_S3C24XX
 	  (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or the
 	  Samsung SMDK2410 development board (and derivatives).
 
+config ARCH_LARM
+	bool "Larm platform"
+	select CPU_V7
+	select LEGACY_TIMER_TICK
+	help
+	  Larm platform
+
 config ARCH_OMAP1
 	bool "TI OMAP1"
 	depends on MMU
@@ -708,6 +715,8 @@ source "arch/arm/mach-vexpress/Kconfig"
 source "arch/arm/mach-vt8500/Kconfig"
 
 source "arch/arm/mach-zynq/Kconfig"
+
+source "arch/arm/mach-larm/Kconfig"
 
 # ARMv7-M architecture
 config ARCH_LPC18XX

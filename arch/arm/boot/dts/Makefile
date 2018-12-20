@@ -1520,3 +1520,4 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
 	aspeed-bmc-supermicro-x11spi.dtb \
 	aspeed-bmc-inventec-transformers.dtb \
 	aspeed-bmc-tyan-s7106.dtb
+dtb-$(CONFIG_ARCH_LARM) += larm_one.dtb
