@@ -1423,6 +1423,9 @@ choice
 		  options; the platform specific options are deprecated
 		  and will be soon removed.
 
+	config DEBUG_LL_UART_LARM
+		bool "Larm platform early debug"
+
 endchoice
 
 config DEBUG_AT91_UART

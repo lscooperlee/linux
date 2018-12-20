@@ -1,0 +1,20 @@
+if ARCH_LARM
+
+config TEST_LARM1
+	bool
+
+config TEST_LARM2
+	bool
+
+menu "larm machine Implementations"
+
+config MACH_LARM_ONE
+	bool "larm one platform"
+	#depends on !ARCH_DAVINCI_DMx || (AUTO_ZRELADDR && ARM_PATCH_PHYS_VIRT)
+	#select ARCH_DAVINCI_DA8XX
+	#select CPU_DCACHE_WRITETHROUGH if !CPU_DCACHE_DISABLE
+	#select CP_INTC
+
+endmenu
+
+endif
