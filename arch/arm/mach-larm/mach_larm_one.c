@@ -2,23 +2,19 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/err.h>
-#include <linux/platform_device.h>
-#include <linux/mtd/mtd.h>
-#include <linux/mtd/partitions.h>
-#include <linux/mtd/rawnand.h>
-#include <linux/i2c.h>
-#include <linux/gpio.h>
-#include <linux/clk.h>
-#include <linux/spi/spi.h>
-#include <linux/spi/eeprom.h>
-#include <linux/platform_data/i2c-davinci.h>
-#include <linux/platform_data/mmc-davinci.h>
-#include <linux/platform_data/mtd-davinci.h>
-#include <linux/platform_data/usb-davinci.h>
+
+#include <linux/clocksource.h>
+#include <linux/clockchips.h>
+#include <linux/sched_clock.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/io.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
+#include <asm/mach/time.h>
+
 
 #define UFCON0	((volatile unsigned int *)(0xFF000000))
 
@@ -50,7 +46,7 @@ static struct map_desc larm_iodesc[] __initdata = {
 	{	/* IO space	*/
 		.virtual	= (u32)0xFF000000,
 		.pfn		= __phys_to_pfn(0xFF000000),
-		.length		= 0xF0000,
+		.length		= 0x100000,
 		.type		= MT_DEVICE,
     },
 };
@@ -79,12 +75,80 @@ static void __init larm_map_io(void) {
 static void larm_init_early(void) {
     larm_print("larm_init_early\n");
 }
+
+static void larm_irq_mask(struct irq_data *d) {
+    larm_print("larm_irq_mask\n");
+}
+static void larm_irq_unmask(struct irq_data *d) {
+    larm_print("larm_irq_unmask\n");
+}
+static struct irq_chip larm_irqchip = {
+    .name       = "larm_irqchip",
+    .irq_ack    = larm_irq_mask,
+    .irq_mask   = larm_irq_mask,
+    .irq_unmask = larm_irq_unmask,
+};
 static void larm_init_irq(void) {
     larm_print("larm_init_irq\n");
+    irq_set_chip_and_handler(2, &larm_irqchip, handle_level_irq);
+    /*
+    irq_set_handler(2, handle_edge_irq);
+    irq_set_handler_data(2, (void *)0xFF0F0000);
+    */
 }
-static void larm_init_time(void) {
+
+
+    /*
+static struct clock_event_device larm_clockevent = {
+    .name= "timer1",
+    .features= CLOCK_EVT_FEAT_ONESHOT,
+    .set_state_shutdown= ep93xx_clkevt_shutdown,
+    .set_state_oneshot= ep93xx_clkevt_shutdown,
+    .tick_resume= ep93xx_clkevt_shutdown,
+    .set_next_event= ep93xx_clkevt_set_next_event,
+    .rating= 400,
+};
+    */
+
+#define ICCON0  ((volatile unsigned int *)(0xFF0F0000)) 
+static irqreturn_t
+larm_timer_interrupt(int irq, void *dev_id)
+{
+
+    *ICCON0 &= ~(1<<1); //clear timer interrupt
+
+    larm_print("larm_timer_interrupt\n");
+    timer_tick();
+    return IRQ_HANDLED;
+}
+static struct irqaction larm_timer_irq = {
+    .name= "larm timer",
+    .flags= IRQF_TIMER|IRQF_IRQPOLL,
+    .handler= larm_timer_interrupt,
+};
+
+#define TMCON0  ((volatile unsigned int *)(0xFF010000))
+#define TMCON1  ((volatile unsigned int *)(0xFF010004))
+#define TMCON2  ((volatile unsigned int *)(0xFF010008))
+#define TMCON3  ((volatile unsigned int *)(0xFF01000c))
+static void __init larm_init_time(void) {
     larm_print("larm_init_time\n");
+    /*
+	clocksource_mmio_init(NULL, "timer4",
+			      EP93XX_TIMER4_RATE, 200, 40,
+			      ep93xx_clocksource_read);
+	sched_clock_register(ep93xx_read_sched_clock, 40,
+			     EP93XX_TIMER4_RATE);
+                 */
+    *TMCON1=100; //set freq
+    *TMCON2=1; //enable_irq
+    *TMCON3=1; //set counter
+    *TMCON0=1; //start timer
+    
+	setup_irq(2, &larm_timer_irq);
+//	clockevents_config_and_register(&larm_clockevent, 100, 1, 0xffffffffU);
 }
+
 static void larm_init_machine(void) {
     larm_print("larm_init_machine\n");
 }

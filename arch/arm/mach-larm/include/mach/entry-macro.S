@@ -5,4 +5,6 @@
 		.endm
 
 		.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
+        ldr \base, =0xFF0F0000
+        ldr \irqnr, [\base]
 		.endm
