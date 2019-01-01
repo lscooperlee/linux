@@ -113,7 +113,7 @@ static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
 {
     *ICCON0 &= ~(1<<1); //clear timer interrupt
     larm_print("larm_timer_interrupt\n");
-//    timer_tick();
+    timer_tick();
     return IRQ_HANDLED;
 }
 static struct irqaction larm_timer_irq = {
@@ -135,7 +135,7 @@ static void __init larm_init_time(void) {
 	sched_clock_register(ep93xx_read_sched_clock, 40,
 			     EP93XX_TIMER4_RATE);
                  */
-    *TMCON1=100; //set freq
+    *TMCON1=10000; //set freq
     *TMCON2=1; //enable_irq
     *TMCON3=100; //set counter
     *TMCON0=1; //start timer
