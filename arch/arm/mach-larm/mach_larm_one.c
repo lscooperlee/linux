@@ -76,11 +76,14 @@ static void larm_init_early(void) {
     larm_print("larm_init_early\n");
 }
 
+#define ICCON0  ((volatile unsigned int *)(0xFF0F0000)) 
 static void larm_irq_mask(struct irq_data *d) {
     larm_print("larm_irq_mask\n");
+//    *ICCON0 &= ~(1<<1); //clear timer interrupt
 }
 static void larm_irq_unmask(struct irq_data *d) {
     larm_print("larm_irq_unmask\n");
+//    *ICCON0 |= (1<<1); //clear timer interrupt
 }
 static struct irq_chip larm_irqchip = {
     .name       = "larm_irqchip",
@@ -91,10 +94,6 @@ static struct irq_chip larm_irqchip = {
 static void larm_init_irq(void) {
     larm_print("larm_init_irq\n");
     irq_set_chip_and_handler(2, &larm_irqchip, handle_level_irq);
-    /*
-    irq_set_handler(2, handle_edge_irq);
-    irq_set_handler_data(2, (void *)0xFF0F0000);
-    */
 }
 
 
@@ -110,15 +109,11 @@ static struct clock_event_device larm_clockevent = {
 };
     */
 
-#define ICCON0  ((volatile unsigned int *)(0xFF0F0000)) 
-static irqreturn_t
-larm_timer_interrupt(int irq, void *dev_id)
+static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
 {
-
     *ICCON0 &= ~(1<<1); //clear timer interrupt
-
     larm_print("larm_timer_interrupt\n");
-    timer_tick();
+//    timer_tick();
     return IRQ_HANDLED;
 }
 static struct irqaction larm_timer_irq = {
@@ -142,7 +137,7 @@ static void __init larm_init_time(void) {
                  */
     *TMCON1=100; //set freq
     *TMCON2=1; //enable_irq
-    *TMCON3=1; //set counter
+    *TMCON3=100; //set counter
     *TMCON0=1; //start timer
     
 	setup_irq(2, &larm_timer_irq);
