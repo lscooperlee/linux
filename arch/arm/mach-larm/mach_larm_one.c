@@ -78,11 +78,11 @@ static void larm_init_early(void) {
 
 #define ICCON0  ((volatile unsigned int *)(0xFF0F0000)) 
 static void larm_irq_mask(struct irq_data *d) {
-    larm_print("larm_irq_mask\n");
+//    larm_print("larm_irq_mask\n");
 //    *ICCON0 &= ~(1<<1); //clear timer interrupt
 }
 static void larm_irq_unmask(struct irq_data *d) {
-    larm_print("larm_irq_unmask\n");
+//    larm_print("larm_irq_unmask\n");
 //    *ICCON0 |= (1<<1); //clear timer interrupt
 }
 static struct irq_chip larm_irqchip = {
@@ -112,7 +112,7 @@ static struct clock_event_device larm_clockevent = {
 static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
 {
     *ICCON0 &= ~(1<<1); //clear timer interrupt
-    larm_print("larm_timer_interrupt\n");
+//    larm_print("larm_timer_interrupt\n");
     timer_tick();
     return IRQ_HANDLED;
 }

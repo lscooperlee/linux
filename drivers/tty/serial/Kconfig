@@ -1573,6 +1573,7 @@ config SERIAL_LARM_CONSOLE
 	bool "Support for console on Larm"
 	depends on SERIAL_LARM=y
 	select SERIAL_CORE_CONSOLE
+	select SERIAL_EARLYCON
 
 endmenu
 
