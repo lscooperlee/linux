@@ -8,6 +8,11 @@
 static void larm_put(const char c) {
     *UFCON0=c;
 }
+static void larm_puts(const char *str) {
+	while(*str){
+		larm_put(*str++);
+	};
+}
 static void early_larm_putc(struct uart_port *port, int c) {
     larm_put(c);
 }
@@ -30,7 +35,6 @@ EARLYCON_DECLARE(larm, early_larm_setup);
 #define LARM_NR_UARTS           1
 
 static struct uart_port larm_port[LARM_NR_UARTS];
-static struct uart_port *console_port;
 
 
 static unsigned int larm_tx_empty(struct uart_port *port){
@@ -48,10 +52,34 @@ static void larm_stop_tx(struct uart_port *port){
     printk("larm_stop_tx\n");
 }
 static void larm_start_tx(struct uart_port *port){
-    printk("larm_start_tx\n");
+    struct circ_buf *xmit = &port->state->xmit;
+
+    if (uart_circ_empty(xmit))
+        return;
+
+	if (port->x_char) {
+        larm_put(port->x_char);
+		port->x_char = 0;
+		port->icount.tx++;
+        return;
+	}
+
+    if (uart_circ_empty(xmit) || uart_tx_stopped(port))
+        return;
+    
+    while(1) {
+        larm_put(xmit->buf[xmit->tail]);
+        xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+        port->icount.tx++;
+        if (uart_circ_empty(xmit))
+            break;
+    }
+
+    if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
+        uart_write_wakeup(port);
 }
 static void larm_throttle(struct uart_port *port){
-    printk("larm_start_tx\n");
+    printk("larm_throttle\n");
 }
 static void larm_unthrottle(struct uart_port *port){
     printk("larm_unthrottle\n");
@@ -148,11 +176,14 @@ static const struct uart_ops larm_uart_ops = {
 };
 
 
-static void larm_console_write(struct console *co, const char *s,
-                        unsigned int count) {
+static void larm_console_write(struct console *console, const char *s,
+                        unsigned int n) {
+    early_larm_write(console, s, n);
 }
 
 static int larm_console_setup(struct console *co, char *options) {
+    larm_puts("larm_console_setup\n");
+    return 0;
 }
 
 static struct uart_driver larm_uart_driver;
@@ -162,7 +193,7 @@ static struct console larm_uart_console = {
 	.write		= larm_console_write,
 	.setup		= larm_console_setup,
 	.flags		= CON_PRINTBUFFER,
-	.index		= -1,
+	.index		= 0,
 	.data		= &larm_uart_driver,
 };
 
@@ -179,8 +210,6 @@ static struct uart_driver larm_uart_driver = {
 };
 
 static int __init larm_uart_init(void) {
-    printk("printk\n");
-    printk("larm_uart_init\n");
     int ret;
     const int id = 0; 
     struct uart_port *port = &larm_port[id];
@@ -189,15 +218,15 @@ static int __init larm_uart_init(void) {
     
     spin_lock_init(&port->lock);
 	port->iotype	= UPIO_MEM;
-	port->flags	= UPF_BOOT_AUTOCONF;
+//	port->flags	= UPF_BOOT_AUTOCONF;
 	port->ops	= &larm_uart_ops;
 	port->irq	= 0;
 	port->line = id;
-#ifdef CONFIG_SERIAL_LARM_CONSOLE
-    console_port = port;
-#endif
+	port->membase = 0xFF000000;
+	port->type = 100; //anything other then PORT_UNKNOWN
     
     ret = uart_add_one_port(&larm_uart_driver, port);
+    printk("larm_uart_init %d\n", ret);
 
 
     return ret;
