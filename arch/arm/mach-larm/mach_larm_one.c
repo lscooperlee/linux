@@ -93,7 +93,10 @@ static struct irq_chip larm_irqchip = {
 };
 static void larm_init_irq(void) {
     larm_print("larm_init_irq\n");
+    irq_set_chip_and_handler(1, &larm_irqchip, handle_level_irq);
+    irq_clear_status_flags(1, IRQ_NOREQUEST);
     irq_set_chip_and_handler(2, &larm_irqchip, handle_level_irq);
+    irq_clear_status_flags(2, IRQ_NOREQUEST);
 }
 
 

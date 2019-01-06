@@ -3,6 +3,7 @@
 #include <linux/serial.h>
 #include <linux/serial_core.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 
 #define UFCON0	((volatile unsigned int *)(0xFF000000))
 static void larm_put(const char c) {
@@ -96,8 +97,45 @@ static void	larm_enable_ms(struct uart_port *port){
 static void	larm_break_ctl(struct uart_port *port, int ctl){
     printk("larm_break_ctl\n");
 }
+
+#define ICCON0  ((volatile unsigned int *)(0xFF0F0000))
+#define UFCON0  ((volatile unsigned int *)(0xFF000000))
+#define UFCON2  ((volatile unsigned int *)(0xFF000008))
+static irqreturn_t larm_uart_interrupt_handler(int irq, void *dev_id)
+{
+    unsigned char c = 0;
+    unsigned long flags;
+
+    struct uart_port *port = dev_id;
+
+    struct tty_port *tport = &port->state->port;
+
+    *ICCON0 &= ~(1<<0); //clear timer interrupt
+
+	spin_lock_irqsave(&port->lock, flags);
+
+    port->icount.rx++;
+    c = *UFCON0;
+
+    tty_insert_flip_char(tport, c, TTY_NORMAL);
+
+    spin_unlock_irqrestore(&port->lock, flags);
+
+    tty_flip_buffer_push(tport);
+
+    return IRQ_HANDLED;
+}
+
+#define UFCON4  ((volatile unsigned int *)(0xFF000010))
 static int larm_startup(struct uart_port *port){
-    printk("larm_startup\n");
+    *UFCON4 = 1; //enable uart irq
+    printk("larm_startup: request_irq %d\n", port->irq);
+	int ret = request_irq(port->irq, larm_uart_interrupt_handler, IRQF_TRIGGER_HIGH, "larm_uart", port);
+	if (ret) {
+        printk("larm_startup: request_irq failed\n");
+		return ret;
+    }
+
     return 0;
 }
 static void	larm_shutdown(struct uart_port *port){
@@ -220,7 +258,7 @@ static int __init larm_uart_init(void) {
 	port->iotype	= UPIO_MEM;
 //	port->flags	= UPF_BOOT_AUTOCONF;
 	port->ops	= &larm_uart_ops;
-	port->irq	= 0;
+	port->irq	= 1;
 	port->line = id;
 	port->membase = 0xFF000000;
 	port->type = 100; //anything other then PORT_UNKNOWN
