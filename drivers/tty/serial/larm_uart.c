@@ -5,9 +5,10 @@
 #include <linux/tty.h>
 #include <linux/tty_flip.h>
 
-#define UFCON0	((volatile unsigned int *)(0xFF000000))
+#include <mach/larm_one.h>
+
 static void larm_put(const char c) {
-    *UFCON0=c;
+    larm_write32(c, LARM_UART_REG_RTX);
 }
 static void larm_puts(const char *str) {
 	while(*str){
@@ -98,9 +99,6 @@ static void	larm_break_ctl(struct uart_port *port, int ctl){
     printk("larm_break_ctl\n");
 }
 
-#define ICCON0  ((volatile unsigned int *)(0xFF0F0000))
-#define UFCON0  ((volatile unsigned int *)(0xFF000000))
-#define UFCON2  ((volatile unsigned int *)(0xFF000008))
 static irqreturn_t larm_uart_interrupt_handler(int irq, void *dev_id)
 {
     unsigned char c = 0;
@@ -110,12 +108,12 @@ static irqreturn_t larm_uart_interrupt_handler(int irq, void *dev_id)
 
     struct tty_port *tport = &port->state->port;
 
-    *ICCON0 &= ~(1<<0); //clear timer interrupt
+    larm_clearbit32(LARM_INTERRUPT_UART, LARM_INTERRUPT_REG_SOURCE); //clear uart interrupt
 
 	spin_lock_irqsave(&port->lock, flags);
 
     port->icount.rx++;
-    c = *UFCON0;
+    c = (unsigned char)larm_read32(LARM_UART_REG_RTX);
 
     tty_insert_flip_char(tport, c, TTY_NORMAL);
 
@@ -126,9 +124,8 @@ static irqreturn_t larm_uart_interrupt_handler(int irq, void *dev_id)
     return IRQ_HANDLED;
 }
 
-#define UFCON4  ((volatile unsigned int *)(0xFF000010))
 static int larm_startup(struct uart_port *port){
-    *UFCON4 = 1; //enable uart irq
+    larm_setbit32(LARM_INTERRUPT_UART, LARM_INTERRUPT_REG_ENABLE); //enable uart irq
     printk("larm_startup: request_irq %d\n", port->irq);
 	int ret = request_irq(port->irq, larm_uart_interrupt_handler, IRQF_TRIGGER_HIGH, "larm_uart", port);
 	if (ret) {

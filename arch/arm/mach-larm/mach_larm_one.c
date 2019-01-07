@@ -15,11 +15,10 @@
 #include <asm/mach/map.h>
 #include <asm/mach/time.h>
 
-
-#define UFCON0	((volatile unsigned int *)(0xFF000000))
+#include <mach/larm_one.h>
 
 static void larm_put(const char c) {
-    *UFCON0=c;
+    larm_write32(c, LARM_UART_REG_RTX);
 }
 static void larm_puts(const char *str) {
 	while(*str){
@@ -44,8 +43,8 @@ void larm_jump1(void) {
 
 static struct map_desc larm_iodesc[] __initdata = {
 	{	/* IO space	*/
-		.virtual	= (u32)0xFF000000,
-		.pfn		= __phys_to_pfn(0xFF000000),
+		.virtual	= (u32)LARM_UART_REG_BASE,
+		.pfn		= __phys_to_pfn(LARM_UART_REG_BASE),
 		.length		= 0x100000,
 		.type		= MT_DEVICE,
     },
@@ -76,14 +75,9 @@ static void larm_init_early(void) {
     larm_print("larm_init_early\n");
 }
 
-#define ICCON0  ((volatile unsigned int *)(0xFF0F0000)) 
 static void larm_irq_mask(struct irq_data *d) {
-//    larm_print("larm_irq_mask\n");
-//    *ICCON0 &= ~(1<<1); //clear timer interrupt
 }
 static void larm_irq_unmask(struct irq_data *d) {
-//    larm_print("larm_irq_unmask\n");
-//    *ICCON0 |= (1<<1); //clear timer interrupt
 }
 static struct irq_chip larm_irqchip = {
     .name       = "larm_irqchip",
@@ -114,7 +108,7 @@ static struct clock_event_device larm_clockevent = {
 
 static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
 {
-    *ICCON0 &= ~(1<<1); //clear timer interrupt
+    larm_clearbit32(LARM_INTERRUPT_TIMER, LARM_INTERRUPT_REG_SOURCE);  //clear timer interrupt
 //    larm_print("larm_timer_interrupt\n");
     timer_tick();
     return IRQ_HANDLED;
@@ -125,10 +119,6 @@ static struct irqaction larm_timer_irq = {
     .handler= larm_timer_interrupt,
 };
 
-#define TMCON0  ((volatile unsigned int *)(0xFF010000))
-#define TMCON1  ((volatile unsigned int *)(0xFF010004))
-#define TMCON2  ((volatile unsigned int *)(0xFF010008))
-#define TMCON3  ((volatile unsigned int *)(0xFF01000c))
 static void __init larm_init_time(void) {
     larm_print("larm_init_time\n");
     /*
@@ -138,10 +128,10 @@ static void __init larm_init_time(void) {
 	sched_clock_register(ep93xx_read_sched_clock, 40,
 			     EP93XX_TIMER4_RATE);
                  */
-    *TMCON1=10000; //set freq
-    *TMCON2=1; //enable_irq
-    *TMCON3=100; //set counter
-    *TMCON0=1; //start timer
+    larm_write32(10000, LARM_TIMER_REG_FREQ);  //set freq
+    larm_setbit32(LARM_INTERRUPT_TIMER, LARM_INTERRUPT_REG_ENABLE); //enable_irq
+    larm_write32(100, LARM_TIMER_REG_COUNTER); //set counter
+    larm_write32(1, LARM_TIMER_REG_ENABLE); //start timer
     
 	setup_irq(2, &larm_timer_irq);
 //	clockevents_config_and_register(&larm_clockevent, 100, 1, 0xffffffffU);

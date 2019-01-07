@@ -523,7 +523,7 @@ config ARCH_DAVINCI
 
 config ARCH_LARM
 	bool "Larm platform"
-	select CPU_ARM926T
+	select CPU_V7
 	help
 	  Larm platform
 
