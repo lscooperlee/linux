@@ -152,8 +152,15 @@ static void larm_handle_irq(struct pt_regs *p) {
 }
 #endif
 
-MACHINE_START(LARM_ONE, "larm_one")
+
+static const char *const larm_one_compat[] __initconst = {
+	"arm,larm_one",
+	NULL
+};
+
+DT_MACHINE_START(LARM_ONE, "larm_one")
 	//.atag_offset = 0x100,
+	.dt_compat = larm_one_compat,
 	.map_io = larm_map_io,
 	.init_early = larm_init_early,
 	.init_irq = larm_init_irq,
