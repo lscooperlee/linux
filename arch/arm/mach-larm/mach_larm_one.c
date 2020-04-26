@@ -113,11 +113,6 @@ static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
     timer_tick();
     return IRQ_HANDLED;
 }
-static struct irqaction larm_timer_irq = {
-    .name= "larm timer",
-    .flags= IRQF_TIMER|IRQF_IRQPOLL,
-    .handler= larm_timer_interrupt,
-};
 
 static void __init larm_init_time(void) {
     larm_print("larm_init_time\n");
@@ -129,11 +124,16 @@ static void __init larm_init_time(void) {
 			     EP93XX_TIMER4_RATE);
                  */
     larm_write32(10000, LARM_TIMER_REG_FREQ);  //set freq
+    barrier();
     larm_setbit32(LARM_INTERRUPT_TIMER, LARM_INTERRUPT_REG_ENABLE); //enable_irq
+    barrier();
     larm_write32(100, LARM_TIMER_REG_COUNTER); //set counter
+    barrier();
     larm_write32(1, LARM_TIMER_REG_ENABLE); //start timer
     
-	setup_irq(2, &larm_timer_irq);
+    if (request_irq(2, larm_timer_interrupt, IRQF_TIMER|IRQF_IRQPOLL, "larm timer", NULL))
+        pr_err("Failed to request irq 2 (larm timer)\n");
+
 //	clockevents_config_and_register(&larm_clockevent, 100, 1, 0xffffffffU);
 }
 
