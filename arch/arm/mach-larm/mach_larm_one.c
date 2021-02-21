@@ -53,18 +53,14 @@ static struct map_desc larm_iodesc[] __initdata = {
 static void larm_l2c_write_sec(unsigned long l, unsigned u){
     larm_print("larm_l2c_write_sec\n");
 }
-static bool larm_smp_init(void) {
-    larm_print("larm_smp_init\n");
-}
+
 static void larm_fixup(struct tag *t, char **s) {
     larm_print("larm_fixup\n");
 }
 static void larm_dt_fixup(void) {
     larm_print("larm_dt_fixup\n");
 }
-long long larm_pv_fixup(void) {
-    larm_print("larm_pv_fixup\n");
-}
+
 static void larm_reserve(void) {
     larm_print("larm_reserve\n");
 }
@@ -110,7 +106,7 @@ static irqreturn_t larm_timer_interrupt(int irq, void *dev_id)
 {
     larm_clearbit32(LARM_INTERRUPT_TIMER, LARM_INTERRUPT_REG_SOURCE);  //clear timer interrupt
 //    larm_print("larm_timer_interrupt\n");
-    timer_tick();
+    legacy_timer_tick(1);
     return IRQ_HANDLED;
 }
 

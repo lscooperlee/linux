@@ -503,6 +503,7 @@ config ARCH_S3C24XX
 config ARCH_LARM
 	bool "Larm platform"
 	select CPU_V7
+	select LEGACY_TIMER_TICK
 	help
 	  Larm platform
 

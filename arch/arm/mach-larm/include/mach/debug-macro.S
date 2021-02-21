@@ -13,5 +13,8 @@ strb	\rd, [\rx, #0]
 .macro	busyuart,rd,rx
 .endm
 
-.macro	waituart,rd,rx
+.macro	waituartcts,rd,rx
+.endm
+
+.macro	waituarttxrdy,rd,rx
 .endm
